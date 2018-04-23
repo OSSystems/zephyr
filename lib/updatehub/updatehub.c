@@ -794,4 +794,3 @@ void updatehub_autohandler(void)
 	k_delayed_work_init(&work, autohandler);
 	k_delayed_work_submit(&work, 0);
 }
-
