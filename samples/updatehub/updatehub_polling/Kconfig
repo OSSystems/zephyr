@@ -1,0 +1,12 @@
+#
+#  Copyright (c) 2018 O.S.Systems
+#
+#  SPDX-License-Identifier: Apache-2.0
+#
+mainmenu "Sample polling app Configuration"
+
+config ZEPHYR_BASE
+	string
+	option env="ZEPHYR_BASE"
+
+source "$ZEPHYR_BASE/Kconfig.zephyr"
