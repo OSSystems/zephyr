@@ -1,0 +1,73 @@
+#
+# Copyright (c) 2018 O.S.Systems
+#
+# SPDX -License-Identifier: Apache-2.0
+#
+
+menu "UpdateHub Firmware Over-the-Air library configuration"
+
+config UPDATEHUB
+    bool"UpdateHub Firmware Over-the-Air library support"
+    select FLASH
+    select REBOOT
+    select BOOTLOADER_MCUBOOT
+    select MPU_ALLOW_FLASH_WRITE
+    select NETWORKING
+    select NET_TCP
+    select HTTP
+    select HTTP_CLIENT
+    select NET_APP_NEED_IPV4
+    select NET_APP_SETTINGS
+    select DNS_RESOLVER
+    select IMG_MANAGER
+    select JSON_LIBRARY
+    select TINYCRYPT
+    select TINYCRYPT_SHA256
+    default"n"
+    help
+        The options below ought to show only if UpdateHub support is enabled.
+
+if UPDATEHUB
+config UPDATEHUB_POLL_INTERVAL
+    int "Time to poll interval (in minutes)"
+    default 1440
+    range 0 43200
+    depends on UPDATEHUB
+    help
+        Set the interval that the UpdateHub update server will be polled.
+        This time interval is zero and 43200 minutes(30 days).
+
+config UPDATEHUB_PRODUCT_UID
+    string"Set the product's identification"
+    default""
+    depends on UPDATEHUB
+    help
+        Set the board 's product uid
+
+if DEBUG
+config UPDATEHUB_SYS_LOG 
+    bool""
+    select SYS_LOG
+    default"y"
+    help
+        Set log for UpdateHub.
+
+config UPDATEHUB_SYS_LOG_LEVEL
+	int
+	prompt"Updatehub Logging level"
+	depends on SYS_LOG && DEBUG
+	default 1
+	range 0 4
+	help
+	  Sets log level for UpdateHub.
+	  Levels are:
+	  0 OFF, do not write
+	  1 ERROR, only write SYS_LOG_ERR
+	  2 WARNING, write SYS_LOG_WRN in addition to previous level
+	  3 INFO, write SYS_LOG_INF in addition to previous levels
+	  4 DEBUG, write SYS_LOG_DBG in addition to previous levels
+
+endif #DEBUG
+endif #UPDATEHUB
+
+endmenu
