@@ -86,7 +86,7 @@ static void wait_on_log_flushed(void)
 }
 #endif
 
-static int search_overwrite_ip()
+static int search_overwrite_ip(void)
 {
 	int ret = -1;
 
@@ -107,7 +107,7 @@ static int search_overwrite_ip()
 	return 0;
 }
 
-static void clean_overwrite_ip()
+static void clean_overwrite_ip(void)
 {
 	memset(&updatehub_ctx.overwrite_ip, 0, MAX_IP_SIZE);
 }
@@ -329,7 +329,7 @@ error:
 	return ret;
 }
 
-static void cleanup_conection()
+static void cleanup_conection(void)
 {
 	int ret;
 
@@ -451,7 +451,7 @@ error:
 	return ret;
 }
 
-static void install_update_cb()
+static void install_update_cb(void)
 {
 	u8_t *data = (u8_t *)k_malloc(MAX_DOWNLOAD_DATA);
 
@@ -532,8 +532,7 @@ static void install_update_cb()
 
 		if (strcmp(sha256sum_image_dowloaded, _probe.sha256sum_image) !=
 		    0) {
-			LOG_ERR("SHA256SUM of image and downloaded"
-				"image are not the same");
+			LOG_ERR("SHA256SUM of image are not the same");
 			updatehub_ctx.code_status = UPDATEHUB_DOWNLOAD_ERROR;
 			goto end;
 		}
@@ -545,7 +544,7 @@ end:
 	k_free(data);
 }
 
-static enum updatehub_response install_update()
+static enum updatehub_response install_update(void)
 {
 	int ret = -1;
 
@@ -720,7 +719,7 @@ static void probe_cb(char *metadata)
 	}
 
 	if (COAP_RESPONSE_CODE_NOT_FOUND == coap_header_get_code(&reply)) {
-		LOG_INF("No update avaiable");
+		LOG_INF("No update available");
 		updatehub_ctx.code_status = UPDATEHUB_NO_UPDATE;
 		goto end;
 	}
@@ -739,7 +738,7 @@ end:
 	return;
 }
 
-static enum updatehub_response probe()
+static enum updatehub_response probe(void)
 {
 	int ret = -1;
 
@@ -859,7 +858,7 @@ error:
 	return updatehub_ctx.code_status;
 }
 
-enum updatehub_response updatehub_probe()
+enum updatehub_response updatehub_probe(void)
 {
 	enum updatehub_response response = UPDATEHUB_NO_UPDATE;
 
@@ -878,7 +877,7 @@ enum updatehub_response updatehub_probe()
 	return response;
 }
 
-enum updatehub_response updatehub_update()
+enum updatehub_response updatehub_update(void)
 {
 	int ret = -1;
 	enum updatehub_response response = UPDATEHUB_NO_UPDATE;
@@ -918,7 +917,7 @@ enum updatehub_response updatehub_update()
 		goto error;
 	}
 
-	LOG_INF("Image flashed successfuly, could reboot now");
+	LOG_INF("Image flashed successfully, could reboot now");
 
 #if !defined(CONFIG_UPDATEHUB_SHELL)
 	sys_reboot(0);
@@ -957,7 +956,7 @@ static void autohandler(struct k_delayed_work *work)
 		goto error;
 	}
 
-	LOG_INF("Image flashed successfuly, rebooting now");
+	LOG_INF("Image flashed successfully, rebooting now");
 
 #if defined(CONFIG_UPDATEHUB_LOG)
 	wait_on_log_flushed();
@@ -976,7 +975,7 @@ submit_queue:
 	work_submit_queue(work);
 }
 
-void updatehub_autohandler()
+void updatehub_autohandler(void)
 {
 	static struct k_delayed_work work;
 

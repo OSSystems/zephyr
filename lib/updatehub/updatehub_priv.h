@@ -131,8 +131,7 @@ struct probe {
 	struct updatehub_config_device_identity device_identity;
 };
 
-static const struct json_obj_descr recv_probe_objects_descr[] =
-{
+static const struct json_obj_descr recv_probe_objects_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct resp_probe_objects,
 			    mode, JSON_TOK_STRING),
 	JSON_OBJ_DESCR_PRIM(struct resp_probe_objects,
@@ -141,14 +140,12 @@ static const struct json_obj_descr recv_probe_objects_descr[] =
 			    size, JSON_TOK_NUMBER),
 };
 
-static const struct json_obj_descr recv_probe_objects_descr_array[] =
-{
+static const struct json_obj_descr recv_probe_objects_descr_array[] = {
 	JSON_OBJ_DESCR_OBJECT(struct resp_probe_objects_array,
 			      objects, recv_probe_objects_descr),
 };
 
-static const struct json_obj_descr recv_probe_sh_string_descr[] =
-{
+static const struct json_obj_descr recv_probe_sh_string_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct resp_probe_any_boards,
 			    product, JSON_TOK_STRING),
 	JSON_OBJ_DESCR_PRIM_NAMED(struct resp_probe_any_boards,
@@ -160,8 +157,7 @@ static const struct json_obj_descr recv_probe_sh_string_descr[] =
 				   ARRAY_SIZE(recv_probe_objects_descr_array)),
 };
 
-static const struct json_obj_descr recv_probe_sh_array_descr[] =
-{
+static const struct json_obj_descr recv_probe_sh_array_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct resp_probe_some_boards,
 			    product, JSON_TOK_STRING),
 	JSON_OBJ_DESCR_ARRAY_NAMED(struct resp_probe_some_boards,
@@ -173,14 +169,12 @@ static const struct json_obj_descr recv_probe_sh_array_descr[] =
 				   ARRAY_SIZE(recv_probe_objects_descr_array)),
 };
 
-static const struct json_obj_descr device_identity_descr[] =
-{
+static const struct json_obj_descr device_identity_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct updatehub_config_device_identity,
 			    id, JSON_TOK_STRING),
 };
 
-static const struct json_obj_descr send_report_descr[] =
-{
+static const struct json_obj_descr send_report_descr[] = {
 	JSON_OBJ_DESCR_PRIM_NAMED(struct report,
 				  "product-uid", product_uid,
 				  JSON_TOK_STRING),
@@ -204,8 +198,7 @@ static const struct json_obj_descr send_report_descr[] =
 			    status, JSON_TOK_STRING),
 };
 
-static const struct json_obj_descr send_probe_descr[] =
-{
+static const struct json_obj_descr send_probe_descr[] = {
 	JSON_OBJ_DESCR_PRIM_NAMED(struct probe,
 				  "product-uid", product_uid,
 				  JSON_TOK_STRING),
