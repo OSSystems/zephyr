@@ -25,7 +25,10 @@ config UPDATEHUB
 	select JSON_LIBRARY
 	select TINYCRYPT
 	select TINYCRYPT_SHA256
-	select NVS
+	select FLASH_PAGE_LAYOUT
+	select FLASH_MAP
+	select FCB
+	select SETTINGS
 	default "n"
 	help
 		UpdateHub is an enterprise-grade solution which makes simple to
