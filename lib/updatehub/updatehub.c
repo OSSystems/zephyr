@@ -26,10 +26,12 @@ LOG_MODULE_REGISTER(updatehub);
 #include <nvs/nvs.h>
 #include <shell/shell.h>
 #include <json.h>
+#include <settings/settings.h>
 
 #include <updatehub.h>
 #include "updatehub_priv.h"
 #include "device_identity.h"
+#include "settings.c"
 
 #define NETWORK_TIMEOUT K_SECONDS(2)
 #define MAX_PATH_SIZE 255
@@ -37,8 +39,6 @@ LOG_MODULE_REGISTER(updatehub);
 #define MAX_DOWNLOAD_DATA 1100
 #define SHA256SUM_STRING_SIZE 65
 #define COAP_MAX_RETRY 3
-#define ADDRESS_ID 1
-#define MAX_IP_SIZE 30
 
 static struct updatehub_context {
 	struct net_context *net_ctx;
@@ -67,15 +67,9 @@ static int nfds;
 static struct sockaddr_in peer_updatehub_addr = { .sin_family = AF_INET,
 						  .sin_port = htons(5683) };
 
-/* TODO: Set the right port of download server */
 static struct sockaddr_in peer_download_addr = { .sin_family = AF_INET,
 						 .sin_port = htons(5683) };
 
-static struct nvs_fs fs = {
-	.sector_size = 64,
-	.sector_count = 3,
-	.offset = FLASH_AREA_STORAGE_OFFSET,
-};
 
 #if defined(CONFIG_UPDATEHUB_LOG)
 static void wait_on_log_flushed(void)
@@ -90,20 +84,19 @@ static int search_overwrite_ip(void)
 {
 	int ret = -1;
 
-	ret = nvs_init(&fs, DT_FLASH_DEV_NAME);
-	if (ret) {
-		LOG_ERR("Flash Init failed");
-		updatehub_ctx.code_status = UPDATEHUB_FLASH_INIT_ERROR;
-		return ret;
+	ip_buffer = k_malloc(MAX_IP_SIZE);
+	memset(ip_buffer, 0, MAX_IP_SIZE);
+
+	ret = settings_load();
+	if (ret < 0) {
+		LOG_ERR("Could not load the settings");
+	} else {
+		if (strlen(ip_buffer) != 0) {
+			memcpy(updatehub_ctx.overwrite_ip, ip_buffer, strlen(ip_buffer));
+		}
 	}
 
-	ret = nvs_read(&fs, ADDRESS_ID, &updatehub_ctx.overwrite_ip,
-		       sizeof(updatehub_ctx.overwrite_ip));
-	if (ret > 0) {
-		LOG_INF("Id: %d, Address: %s", ADDRESS_ID,
-			updatehub_ctx.overwrite_ip);
-	}
-
+	k_free(ip_buffer);
 	return 0;
 }
 
@@ -117,15 +110,12 @@ static int storage_overwrite_ip()
 {
 	int ret;
 
-	ret = nvs_init(&fs, DT_FLASH_DEV_NAME);
+	ret = settings_save_one("udatehub/ip", &updatehub_ctx.overwrite_ip, MAX_IP_SIZE);
 	if (ret) {
-		LOG_ERR("Flash Init failed");
+		LOG_ERR("Could not save the settings %d", ret);
 		updatehub_ctx.code_status = UPDATEHUB_FLASH_INIT_ERROR;
 		return ret;
 	}
-	LOG_INF("No address found, adding overwrite_ip at id %d", ADDRESS_ID);
-	nvs_write(&fs, ADDRESS_ID, &updatehub_ctx.overwrite_ip,
-		  strlen(updatehub_ctx.overwrite_ip) + 1);
 
 	return 0;
 }
@@ -490,7 +480,7 @@ static void install_update_cb(void)
 		&flash_ctx, response_packet.data + response_packet.offset,
 		response_packet.max_len - response_packet.offset,
 		updatehub_ctx.downloaded_size ==
-			updatehub_ctx.block.total_size);
+		updatehub_ctx.block.total_size);
 	if (ret < 0) {
 		LOG_ERR("Error to write on the flash");
 		updatehub_ctx.code_status = UPDATEHUB_INSTALL_ERROR;
@@ -612,7 +602,6 @@ static enum updatehub_response install_update(void)
 			attempts_download++;
 		}
 	}
-
 cleanup:
 	cleanup_conection();
 error:
@@ -684,7 +673,7 @@ static int report(enum updatehub_state execution,
 	ret = send_request(COAP_TYPE_NON_CON, COAP_METHOD_POST,
 			   UPDATEHUB_REPORT);
 	if (ret < 0) {
-		LOG_ERR("Error to send %s report", state_execution(execution));
+		LOG_ERR("Error to send report");
 		goto cleanup;
 	}
 
@@ -778,6 +767,12 @@ static enum updatehub_response probe(void)
 		goto error;
 	}
 
+	ret = updatehub_settings_init();
+	if (ret < 0) {
+		LOG_ERR("Error to settings");
+		goto error;
+	}
+
 	ret = search_overwrite_ip();
 	if (ret < 0) {
 		goto error;
@@ -842,7 +837,7 @@ static enum updatehub_response probe(void)
 		memcpy(_probe.sha256sum_image,
 		       metadata_some_boards.objects[1].objects.sha256sum,
 		       strlen(metadata_some_boards.objects[1]
-				      .objects.sha256sum));
+			      .objects.sha256sum));
 		_probe.image_size =
 			metadata_some_boards.objects[1].objects.size;
 	}
@@ -870,7 +865,7 @@ enum updatehub_response updatehub_probe(void)
 	if (response != UPDATEHUB_HAS_UPDATE) {
 		if (response == UPDATEHUB_NO_UPDATE) {
 			clean_overwrite_ip();
-			nvs_delete(&fs, ADDRESS_ID);
+			settings_delete("ip");
 		}
 	}
 
@@ -991,6 +986,7 @@ static int cmd_updatehub_run(const struct shell *shell, size_t argc,
 			     char **argv)
 {
 	enum updatehub_response response = UPDATEHUB_NO_UPDATE;
+	int ret;
 
 	switch (argc) {
 	case 1:
@@ -1018,8 +1014,6 @@ static int cmd_updatehub_run(const struct shell *shell, size_t argc,
 	if (response != UPDATEHUB_OK) {
 		goto error;
 	}
-
-	int ret;
 
 	ret = storage_overwrite_ip();
 	if (ret < 0) {
