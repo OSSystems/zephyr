@@ -1,20 +1,21 @@
-UpdateHub manual sample
+Manual UpdateHub sample
 #######################
 
 Overview
 ********
 
-This sample application implements a Simple UpdateHub manual.
-UpdateHub is is an enterprise-grade solution which makes simple to remotely
-update all your Linux-based devices in the field. It handles all aspects
-related to sending Firmware Over-the-Air (FOTA) updates with maximum security
-and efficiency, while you focus in adding value to your product.
+This is a sample on how to implement a simple manual, local update using
+UpdateHub. UpdateHub is is an enterprise-grade solution which makes simple to
+remotely update all your Linux-based devices in the field. It handles all
+aspects related to sending Firmware Over-the-Air (FOTA) updates with maximum
+security and efficiency, while you focus in adding value to your product.
 
 Caveats
 *******
 
-* The Zephyr port of `updatehub_manual` is configured to run on a NXP Fdrm_k64f MCU. The
-  application should build and run for other platforms without modification
+* The Zephyr port of `updatehub_manual` is configured to run on a NXP Fdrm_k64f
+  MCU by default. The application should build and run for other platforms
+  without modification.
 
 * The MCUboot bootloader is required for ``updatehub_manual`` to function
   properly. More information about the Device Firmware Upgrade subsystem and
@@ -24,22 +25,20 @@ Building and Running
 ********************
 
 The below steps describe how to build and run the ``updatehub_manual`` sample in
-Zephyr. Where examples are given, they assume the sample is being built for
-the Nxp Fdrm_k64f Development Kit (``BOARD=fdrm_k64f``).
+Zephyr. Where examples are given, it is assumed the sample is being built for
+the NXP Fdrm_k64f Development Kit (``BOARD=fdrm_k64f``).
 
 Step 1: Build MCUboot
 =====================
 
-Build MCUboot by following the instructions in the :ref:`mcuboot`
-documentation page.
+Build MCUboot by following the instructions in the :ref:`mcuboot` documentation
+page.
 
 Step 2: Flash MCUboot
-======================
+=====================
 
-Flash the resulting image file to address 0x0 of flash memory.
-This can be done in multiple ways.
-
-Using make or ninja:
+Flash the resulting image file to the 0x0 address of the flash memory. This can
+be done in multiple ways, but the most common ones would be using make or ninja:
 
 .. code-block:: console
 
@@ -48,7 +47,7 @@ Using make or ninja:
    ninja flash
 
 Step 3: Build updatehub_manual
-=====================
+==============================
 
 ``updatehub_manual`` can be built for the fdrm_k64f as follows:
 
@@ -60,13 +59,13 @@ Step 3: Build updatehub_manual
 
 .. updatehub_manual_sample_sign:
 
-Step 4: Sign the image
-======================
+Step 4: Sign the original image
+===============================
 
 .. note::
-   From this section onwards you can use either a binary (``.bin``) or an
-   Intel Hex (``.hex``) image format. This is written as ``(bin|hex)`` in this
-   document.
+   From this section onwards you can use either a binary (``.bin``) or an Intel
+   Hex (``.hex``) image format. This is written as ``(bin|hex)`` in this
+   document, so edit the commands accordingly before running them.
 
 Using MCUboot's :file:`imgtool.py` script, sign the :file:`zephyr.(bin|hex)`
 file you built in Step 3. In the below example, the MCUboot repo is located at
@@ -82,11 +81,11 @@ file you built in Step 3. In the below example, the MCUboot repo is located at
         --slot-size <image-slot-size> \
         <path-to-zephyr.(bin|hex)> signed.(bin|hex)
 
-The above command creates an image file called :file:`signed.(bin|hex)` in the
+The command above creates an image file called :file:`signed.(bin|hex)` in the
 current directory.
 
 Step 5: Flash the updatehub_manual image
-===============================
+========================================
 
 Upload the :file:`signed.(bin|hex)` file from Step 4 to image slot-0 of your
 board.  The location of image slot-0 varies by board, as described in
@@ -100,10 +99,11 @@ Using :file:`pyocd` you don't need to specify the slot-0 starting address.
     sudo pyocd-flashtool <path-to-signed.bin>
 
 
-Step 6: Sign other image
-========================
+Step 6: Signing the update image
+================================
 
-For to test this sample, you need sign the same (bin|hex) using other name and version.
+For the update to be correctly validated on the server you will need sign the
+(bin|hex) image, piping the output to another file.
 
 .. code-block:: console
 
@@ -116,34 +116,34 @@ For to test this sample, you need sign the same (bin|hex) using other name and v
         <path-to-zephyr.(bin|hex)> signed_v2.(bin|hex)
 
 
-Step 7: Create a package with uhu
-==================================
+Step 7: Create a package with UpdateHub Utilities (uhu)
+=======================================================
 
-First you need install uhu at your system, using
+First you need install UpdateHub Utilities (uhu) at your system, using:
 
 .. code-block:: console
 
     pip3 install uhu
 
-After to install the uhu, you need set the product-uid:
+After installing uhu you will need to set the product-uid:
 
 .. code-block:: console
 
     uhu product use "e4d37cfe6ec48a2d069cc0bbb8b078677e9a0d8df3a027c4d8ea131130c4265f"
 
-The package and how mode is,
+Also add the package and it's mode ("zephyr"):
 
 .. code-block:: console
 
-    uhu package add signed_v2.bin -m zephyr
+    uhu package add signed_v2.(bin|hex) -m zephyr
 
-and inform what version this image is,
+Then inform what version this image is:
 
 .. code-block:: console
 
    uhu package version 2.0.0.0
 
-Finally you can build the package running
+And finally you can build the package by running:
 
 .. code-block:: console
 
@@ -151,9 +151,9 @@ Finally you can build the package running
 
 
 Step 8: Start the updatehub-ce-server
-===================================
+=====================================
 
-Start the server is easier just run the following command:
+Start the server is as easy as just running the following Docker command:
 
 .. code-block:: console
 
@@ -161,16 +161,16 @@ Start the server is easier just run the following command:
 
 
 Step 9: Add the package the server
-=============================
+==================================
 
-Now you need add the package at updatehub-ce-server, for this, you need
-open your browser and open the server `localhost:8080`, for default the
-login and password is `admin`.
-Now, you need click on the package menu and after `UPLOAD PACKAGE`, and
-select your package built on the step 7.
+Now you need add the package at updatehub-ce-server, for this you will need to
+open your browser to the server URL, `localhost:8080`, and then log
+into the server using `admin` as the login and password by default.  After
+log-in you must click on the package menu and then `UPLOAD PACKAGE`, and select
+the package built on the step 7.
 
 Step 10: Ping device on server
-============================
+==============================
 
 For ping your device at updatehub_ce_server you need open your terminal
 where you use for debbuging the board, and type the following command:
@@ -181,36 +181,39 @@ where you use for debbuging the board, and type the following command:
 
 If everything is alright will print on the screen `No update available`.
 
-Step 11: Create rollout
+Step 11: Create a rollout
 =========================
 
-You need go where the updatehub_ce_server is open on the browser and
-click on menu Rollout and after `CREATE ROLLOUT`, and select the version
-of the package that you add on the step 9.
+You need go where the updatehub_ce_server is open on the browser and click on
+menu Rollout and after `CREATE ROLLOUT`, and select the version of the package
+that you add on the step 9. After that the update is published, and the server
+is ready to accept update requests.
 
-Step 12: Go to update
-======================
+Step 12: Run the update
+=======================
 
-Open your terminal where you use for debbuging the board, and type the
-following command:
+Open your terminal that you use for debbuging the board, and type the following
+command:
 
 .. code-block:: console
 
     updatehub run <your-local-ip>
 
-If everything is alright will print on the screen `Image flashed
-successfully, could reboot now`.
+And then wait. The board will ping the server, check if there's any new updates,
+and then download the update package you've just created. If everything goes
+fine the message `Image flashed successfully, you can reboot now` will be
+printed on the terminal.
 
 Step 13: Reboot the system
-===========================
+==========================
 
-Open your terminal where you use for debbuging the board, and type the
-following command:
+Open your terminal where you use for debbuging the board, and type the following
+command:
 
 .. code-block:: console
 
     kernel reboot cold
 
-Your board will reboot and the new image will start. After restart
-the board will ping automatically to server and the message `No update
-available` will print on the screen.
+Your board will reboot and then start with the new image. After rebooting the
+board will automatically ping the server again and the message `No update
+available` will be printed on the terminal.
