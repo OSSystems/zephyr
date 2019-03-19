@@ -67,6 +67,9 @@ Step 3: Start the updatehub-ce-server
 By default, the updatehub application is set to start on the official server.
 For more details on how to use the official server please refer to the
 documentation on `updatehub.io`_.
+The official server has the option to use CoAPS/DTLS or not. By default the UpdateHub
+use DTLS, but this option can be disable if it is necessary on ``prj.conf``, just
+change :option:`CONFIG_UPDATEHUB_DTLS` to ``n`` and remove the minimal tls config.
 
 If you would like to use your own server, the steps below explain how
 updatehub works with updatehub-ce-server running, started by the
@@ -80,7 +83,8 @@ Using this server the user need create own ``overaly-prj.conf`` setting the opti
 :option:`CONFIG_UPDATEHUB_SERVER` with your local ip address and the option
 :option:`CONFIG_UPDATEHUB_CE_SERVER` with true. If the user will use polling mode on
 UpdateHub need too set the option :option:`CONFIG_UPDATEHUB_POLL_INTERVAL` with the period of
-your preference, remembering that the limit is between 0 minute until 43200 minutes(30 days)
+your preference, remembering that the limit is between 0 minute until 43200 minutes(30 days).
+And need set the :option:`CONFIG_UPDATEHUB_DTLS` to ``n`` and remove the minimal tls config.
 
 Step 4: Build UpdateHub
 =======================
