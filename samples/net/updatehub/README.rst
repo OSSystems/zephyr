@@ -67,6 +67,8 @@ Step 3: Start the updatehub Community Edition
 By default, the updatehub application is set to start on the UpdateHub Cloud.
 For more details on how to use the UpdateHub Cloud please refer to the
 documentation on `updatehub.io`_.
+The UpdateHub Cloud has the option to use CoAPS/DTLS or not. If the user want
+to use the CoAPS/DTLS just need to add the ``overlay-dtls.conf`` at the build.
 
 If you would like to use your own server, the steps below explain how
 updatehub works with updatehub-ce running, started by the
@@ -81,6 +83,7 @@ Using this server the user need create own ``overaly-prj.conf`` setting the opti
 :option:`CONFIG_UPDATEHUB_CE` with true. If the user will use polling mode on
 UpdateHub need too set the option :option:`CONFIG_UPDATEHUB_POLL_INTERVAL` with the period of
 your preference, remembering that the limit is between 0 minute until 43200 minutes(30 days).
+And this server does not use DTLS, so you do not need to add the ``overlay-dtls.config``.
 
 Step 4: Build UpdateHub
 =======================
