@@ -32,6 +32,11 @@ LOG_MODULE_REGISTER(updatehub);
 #include <net/tls_credentials.h>
 #endif
 
+#if defined(CONFIG_UPDATEHUB_DTLS)
+#define CA_CERTIFICATE_TAG 1
+#include <net/tls_credentials.h>
+#endif
+
 #define NETWORK_TIMEOUT K_SECONDS(2)
 #define UPDATEHUB_POLL_INTERVAL K_MINUTES(CONFIG_UPDATEHUB_POLL_INTERVAL)
 #define MAX_PATH_SIZE 255
