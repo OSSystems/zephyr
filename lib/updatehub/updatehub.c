@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 O.S.Systems
+ * Copyright (c) 2018,2019 O.S.Systems
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -26,6 +26,11 @@ LOG_MODULE_REGISTER(updatehub);
 #include "updatehub_priv.h"
 #include "firmware.h"
 #include "device.h"
+
+#if defined(CONFIG_UPDATEHUB_DTLS)
+#include "certificates.h"
+#include <net/tls_credentials.h>
+#endif
 
 #define NETWORK_TIMEOUT K_SECONDS(2)
 #define UPDATEHUB_POLL_INTERVAL K_MINUTES(CONFIG_UPDATEHUB_POLL_INTERVAL)
@@ -74,6 +79,21 @@ static void prepare_fds(void)
 	ctx.fds[ctx.nfds].events = 1;
 	ctx.nfds++;
 }
+
+#if defined(CONFIG_UPDATEHUB_DTLS)
+static void delete_tls_certificate(void)
+{
+	if (tls_credential_delete(CA_CERTIFICATE_TAG,
+				  TLS_CREDENTIAL_SERVER_CERTIFICATE) < 0) {
+		LOG_ERR("Coudl not delete server credential");
+	}
+	if (tls_credential_delete(CA_CERTIFICATE_TAG,
+				  TLS_CREDENTIAL_PRIVATE_KEY) < 0) {
+		LOG_ERR("Could not delete private key");
+	}
+
+}
+#endif
 
 static int metadata_hash_get(char *metadata)
 {
@@ -165,6 +185,11 @@ static bool start_coap_client(void)
 					   .sin_port = htons(5683) };
 	char ip[MAX_IP_SIZE] = "UNKNOW_IP";
 
+#if defined(CONFIG_UPDATEHUB_DTLS)
+	sec_tag_t sec_list[] = { CA_CERTIFICATE_TAG };
+	int verify = 0;
+#endif
+
 	if (dns_get_addr_info(UPDATEHUB_SERVER, DNS_QUERY_TYPE_A, NULL,
 			      dns_cb, &ip, NETWORK_TIMEOUT) < 0) {
 		LOG_ERR("Could not resolve dns");
@@ -178,11 +203,30 @@ static bool start_coap_client(void)
 		return false;
 	}
 
+#if defined(CONFIG_UPDATEHUB_DTLS)
+	ctx.sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);
+	if (ctx.sock < 0) {
+		LOG_ERR("Failed to create UDP socket");
+		return false;
+	}
+
+	if (setsockopt(ctx.sock, SOL_TLS, TLS_SEC_TAG_LIST,
+		       sec_list, sizeof(sec_list)) < 0) {
+		LOG_ERR("Failed to set TLS_TAG option");
+		return false;
+	}
+
+	if (setsockopt(ctx.sock, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(int)) < 0) {
+		LOG_ERR("Failed to set TLS_PEER_VERIFY option");
+		return false;
+	}
+#else
 	ctx.sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_UDP);
 	if (ctx.sock < 0) {
 		LOG_ERR("Failed to create UDP socket");
 		return false;
 	}
+#endif
 
 	if (connect(ctx.sock, &addr, sizeof(addr)) < 0) {
 		LOG_ERR("Cannot connect to UDP remote");
@@ -202,6 +246,7 @@ static void cleanup_conection(void)
 
 	memset(&ctx.fds[1], 0, sizeof(ctx.fds[1]));
 	ctx.nfds = 0;
+	ctx.sock = 0;
 }
 
 static int send_request(enum coap_msgtype msgtype, enum coap_method method,
@@ -649,6 +694,26 @@ enum updatehub_response updatehub_probe(void)
 		goto error;
 	}
 
+#if defined(CONFIG_UPDATEHUB_DTLS)
+	if (tls_credential_add(CA_CERTIFICATE_TAG,
+			       TLS_CREDENTIAL_SERVER_CERTIFICATE,
+			       server_certificate,
+			       sizeof(server_certificate)) < 0) {
+		LOG_ERR("Failed to register server certificate");
+		ctx.code_status = UPDATEHUB_NETWORKING_ERROR;
+		return ctx.code_status;
+	}
+
+	if (tls_credential_add(CA_CERTIFICATE_TAG,
+			       TLS_CREDENTIAL_PRIVATE_KEY,
+			       private_key,
+			       sizeof(private_key)) < 0) {
+		LOG_ERR("Failed to register private key");
+		ctx.code_status = UPDATEHUB_NETWORKING_ERROR;
+		return ctx.code_status;
+	}
+#endif
+
 	if (!start_coap_client()) {
 		ctx.code_status = UPDATEHUB_NETWORKING_ERROR;
 		goto error;
@@ -718,6 +783,12 @@ error:
 	k_free(firmware_version);
 	k_free(device_id);
 
+#if defined(CONFIG_UPDATEHUB_DTLS)
+	if (ctx.code_status != UPDATEHUB_HAS_UPDATE) {
+		delete_tls_certificate();
+	}
+#endif
+
 	return ctx.code_status;
 }
 
@@ -762,6 +833,9 @@ error:
 			LOG_ERR("Could not reporting error state");
 		}
 	}
+#if defined(CONFIG_UPDATEHUB_DTLS)
+	delete_tls_certificate();
+#endif
 
 	return ctx.code_status;
 }
@@ -785,7 +859,7 @@ static void autohandler(struct k_delayed_work *work)
 			break;
 
 		default:
-			goto error;
+			break;
 		}
 
 		break;
@@ -795,14 +869,7 @@ static void autohandler(struct k_delayed_work *work)
 		break;
 
 	default:
-		goto error;
-	}
-
-error:
-	if (ctx.code_status != UPDATEHUB_NETWORKING_ERROR) {
-		if (report(UPDATEHUB_STATE_ERROR) < 0) {
-			LOG_ERR("Could not reporting error state");
-		}
+		break;
 	}
 }
 
